@@ -1,7 +1,7 @@
 function enhanceResponse(res) {
     res.send = (data) => {
       if (typeof data === 'string') {
-        res.setHeader('Content-Type', 'text/plain; charset=utf-8'); // <-- вот это важно
+        res.setHeader('Content-Type', 'text/plain; charset=utf-8');
         res.end(data);
       } else {
         res.setHeader('Content-Type', 'application/json');
