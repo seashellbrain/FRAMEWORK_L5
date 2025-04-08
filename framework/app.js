@@ -1,13 +1,10 @@
 const http = require('http');
+const { EventEmitter } = require('events');
 const Router = require('./router');
 
-const { enhanceRequest } = require('./request');
-const { enhanceResponse } = require('./response');
-
-const emitter = require('./emitter');
-
-class App {
+class App extends EventEmitter {
   constructor() {
+    super();
     this.router = new Router();
     this.middlewares = [];
   }
@@ -35,26 +32,58 @@ class App {
 
   listen(port, callback) {
     const server = http.createServer((req, res) => {
-      enhanceRequest(req);
-      enhanceResponse(res);
+      this.emit('request', req.url);
 
-      req.on('end', () => {
-        let idx = 0;
+      let idx = 0;
 
-        const next = () => {
-          const middleware = this.middlewares[idx++];
-          if (middleware) {
-            middleware(req, res, next);
-          } else {
-            this.handleRequest(req, res);
+      const next = (err) => {
+        if (err) {
+          const errorHandler = this.middlewares.find(mw => mw.length === 4);
+          if (errorHandler) return errorHandler(err, req, res, next);
+          res.statusCode = 500;
+          return res.end('Internal Server Error');
+        }
+
+        const middleware = this.middlewares[idx++];
+        if (middleware) {
+          try {
+            if (middleware.length === 4) {
+              next(); // skip error middlewares
+            } else {
+              middleware(req, res, next);
+            }
+          } catch (error) {
+            next(error);
           }
-        };
+        } else {
+          this.handleRequest(req, res);
+        }
+      };
 
-        next();
-      });
+      next();
     });
 
     server.listen(port, callback);
+  }
+
+  get(path, handler) {
+    this.router.get(path, handler);
+  }
+
+  post(path, handler) {
+    this.router.post(path, handler);
+  }
+
+  put(path, handler) {
+    this.router.put(path, handler);
+  }
+
+  patch(path, handler) {
+    this.router.patch(path, handler);
+  }
+
+  delete(path, handler) {
+    this.router.delete(path, handler);
   }
 }
 

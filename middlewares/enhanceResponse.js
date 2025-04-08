@@ -1,4 +1,4 @@
-function enhanceResponse(res) {
+module.exports = function enhanceResponse(req, res, next) {
     res.send = (data) => {
       if (typeof data === 'string') {
         res.setHeader('Content-Type', 'text/plain; charset=utf-8');
@@ -18,5 +18,7 @@ function enhanceResponse(res) {
       res.statusCode = code;
       return res;
     };
-  }
-  module.exports = { enhanceResponse };
+  
+    next();
+  };
+  
